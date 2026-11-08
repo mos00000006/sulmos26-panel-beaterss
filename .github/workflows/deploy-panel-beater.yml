@@ -1,0 +1,40 @@
+name: Deploy SULMOS26 Panel Beater V38
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'public/**'
+      - 'migrations/**'
+      - 'wrangler.jsonc'
+      - 'scripts/prepare-deploy.mjs'
+      - '.github/workflows/deploy-panel-beater.yml'
+jobs:
+  check-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install project dependencies
+        run: npm install --no-audit --no-fund
+      - name: Check source and tests
+        run: npm run check
+      - name: Prepare independent Panel Beater Worker configuration
+        env:
+          PANEL_BEATER_D1_DATABASE_ID: ${{ secrets.PANEL_BEATER_D1_DATABASE_ID }}
+        run: node scripts/prepare-deploy.mjs
+      - name: Apply Panel Beater database migrations
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx wrangler d1 migrations apply panel-beater-db --remote --config .deploy/wrangler.jsonc
+      - name: Deploy Panel Beater backend and public PWA assets
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx wrangler deploy --config .deploy/wrangler.jsonc
