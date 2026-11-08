@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 const uuid = (process.env.PANEL_BEATER_D1_DATABASE_ID || '').trim();
-if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(uuid)) {
+if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(uuid)) {
   throw new Error('PANEL_BEATER_D1_DATABASE_ID is missing or not a Cloudflare D1 UUID. Configure the GitHub Actions secret for the PANEL BEATER database, NOT the retail database.');
 }
 const required = ['src/index.js','public/index.html','public/app.js','public/styles.css','public/manifest.webmanifest','public/assets/icon-192.png','public/assets/icon-512.png','migrations/0001_panel_beater_core.sql'];
