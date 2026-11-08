@@ -1,0 +1,35 @@
+SULMOS26 PANEL BEATER — V40 PROFESSIONAL DOCUMENT PDF PATCH
+=============================================================
+
+WHAT THIS CHANGES
+- Downloaded repair estimates, customer invoices and workshop paperwork have a new A4 visual layout.
+- Uploaded company logos are scaled into a neat company header.
+- When a company has no logo, the document shows a neutral "NO LOGO UPLOADED" placeholder.
+- The repair assessment and item table wrap onto additional pages rather than getting cut off.
+- Subtotal, stored VAT and total appear immediately after the item table.
+- Footer terms and the source company identity appear on each document.
+
+FILE TO REPLACE
+    public/app.js
+
+INSTALLATION
+1. Open https://github.com/mos00000006/sulmos26-panel-beaterss
+2. Back up the existing public/app.js (download it or use Git history).
+3. Open public/app.js and choose the pencil/edit button.
+4. Replace its entire content with the app.js from this patch (or upload app.js into the public folder).
+5. Commit to the main branch.
+6. Run the existing "Panel Beater Check" workflow.
+7. Run the existing "Deploy SULMOS26 Panel Beater V38" workflow.
+8. Open a saved estimate and click Download PDF. Check the downloaded file.
+9. Upload a company logo under Company Branding; save; download again to check your real company logo.
+
+IMPORTANT
+- DO NOT overwrite src/index.js, migration files, Cloudflare secrets, or your Retail repository.
+- This is a front-end PDF template change only; no existing invoices or estimates are edited.
+- VAT values are sourced from saved records; the patch does not certify SARS VAT tax invoice compliance.
+- Sample PDF contains fictional demonstration data, not a real company invoice.
+
+LOCAL CHECKS
+- node --check public/app.js
+- Chromium rendering of one-page estimate and six-page extended estimate
+- Generated PDF opened and inspected with pdfinfo
