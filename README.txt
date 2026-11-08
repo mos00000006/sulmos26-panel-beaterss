@@ -1,6 +1,14 @@
-SULMOS26 Panel Beater V38 - UUID validator correction
+SULMOS26 PANEL BEATER V40 — GITHUB TEST FIX
 
-Replace ONLY scripts/prepare-deploy.mjs in GitHub repository sulmos26-panel-beaterss.
-The original UUID regex wrongly requires 6 blocks instead of 5.
-No changes to secrets, database, customer data or other source files are required.
-Commit to main and run Deploy SULMOS26 Panel Beater V38.
+Fixes failing architecture test #4 after installing V40 PDF redesign.
+
+The updated PDF renderer uses company?.logo_data (optional chaining), whereas
+an older architecture test only matched company.logo_data.
+
+Replace ONLY tests/architecture.test.mjs in GitHub:
+https://github.com/mos00000006/sulmos26-panel-beaterss/edit/main/tests/architecture.test.mjs
+
+Do NOT replace public/app.js or backend for this fix. Keep your V40 app.js.
+Commit to main, confirm Panel Beater Check passes, then run deployment.
+
+Local verification: 8 / 8 tests pass using the V40 public/app.js and V37 backend.
