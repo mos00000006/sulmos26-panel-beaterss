@@ -1,0 +1,7 @@
+{
+  "name": "sulmos26-panel-beaterss",
+  "main": "src/index.js",
+  "compatibility_date": "2026-11-08",
+  "assets": {"directory":"./public", "binding":"ASSETS", "run_worker_first":["/api/*"]},
+  "d1_databases": [{"binding":"DB", "database_name":"panel-beater-db", "database_id":"REPLACE_WITH_NEW_PANEL_BEATER_D1_DATABASE_UUID", "migrations_dir":"migrations"}]
+}
