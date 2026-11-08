@@ -16,6 +16,7 @@ const current = fs.readFileSync('wrangler.jsonc','utf8');
 const base = JSON.parse(current);
 if (base.name !== 'sulmos26-panel-beaterss') throw new Error('Wrong Worker name — refusing to deploy into a different system.');
 const out = {...base, name: 'sulmos26-panel-beaterss', main:'src/index.js', assets:{directory:'./public',binding:'ASSETS',run_worker_first:['/api/*']}, d1_databases:[{binding:'DB',database_name:'panel-beater-db',database_id:uuid,migrations_dir:'migrations'}]};
-fs.mkdirSync('.deploy',{recursive:true});
-fs.writeFileSync('.deploy/wrangler.jsonc',JSON.stringify(out,null,2)+'\n');
+// Keep the generated configuration beside src/, public/ and migrations/.
+// Wrangler resolves relative paths from the config directory.
+fs.writeFileSync('wrangler.deploy.jsonc',JSON.stringify(out,null,2)+'\n');
 console.log('Checked V37 application files, install icons, Worker asset routing, independent D1 configuration. Prepared safe Panel Beater deployment.');
