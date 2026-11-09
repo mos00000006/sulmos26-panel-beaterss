@@ -63,8 +63,7 @@ function makeCanvas(){const canvas=document.createElement('canvas');canvas.width
 function drawWrapped(ctx,text,x,y,maxWidth,lineHeight=28,maxLines=100){text=String(text||'').replace(/\r/g,'');for(const segment of text.split('\n')){const words=segment.split(/\s+/);let line='';for(const w of words){if(ctx.measureText(line+' '+w).width>maxWidth&&line){ctx.fillText(line,x,y);y+=lineHeight;maxLines--;line=w}else line+=(line?' ':'')+w;if(maxLines<=0)return y}ctx.fillText(line,x,y);y+=lineHeight;if(--maxLines<=0)return y}return y}
 function textAt(ctx,text,x,y,size=24,color='#243342',bold=false){ctx.font=`${bold?'bold ':''}${size}px Arial, sans-serif`;ctx.fillStyle=color;ctx.fillText(String(text||''),x,y)}
 async function logoImage(src){if(!src)return null;return new Promise(resolve=>{const img=new Image();img.onload=()=>resolve(img);img.onerror=()=>resolve(null);img.src=src})}
-// SULMOS26 Automotive document layout V41 — all figures sourced from the existing saved record.
-// One A4 page is rendered at 1240 x 1754 and converted to a local PDF by pdfFromJpegs.
+// SULMOS26 Automotive V42 — premium A4 document layout. Existing saved amounts and company identity are unchanged.
 function pdfWrap(ctx,value,maxWidth){
  const out=[];
  for(const paragraph of String(value??'').replace(/\r/g,'').split('\n')){
@@ -76,158 +75,215 @@ function pdfWrap(ctx,value,maxWidth){
     let fragment='';for(const ch of word){if(ctx.measureText(fragment+ch).width>maxWidth&&fragment){out.push(fragment);fragment=''}fragment+=ch}
     line=fragment;continue;
    }
-   const proposed=line?line+' '+word:word;
-   if(ctx.measureText(proposed).width>maxWidth&&line){out.push(line);line=word}else line=proposed;
+   const attempt=line?line+' '+word:word;
+   if(ctx.measureText(attempt).width>maxWidth&&line){out.push(line);line=word}else line=attempt;
   }
   if(line)out.push(line);
  }
  return out;
 }
-function pdfLabel(ctx,label,x,y){ctx.font='bold 17px Arial, sans-serif';ctx.fillStyle='#64748b';ctx.fillText(String(label).toUpperCase(),x,y)}
-function pdfValue(ctx,value,x,y,width,size=22,bold=true){
- ctx.font=`${bold?'bold ':''}${size}px Arial, sans-serif`;ctx.fillStyle='#142638';
- let z=String(value??'—');if(ctx.measureText(z).width>width){while(z.length>2&&ctx.measureText(z+'…').width>width)z=z.slice(0,-1);z+='…'}
- ctx.fillText(z,x,y);
+function pdfRound(ctx,x,y,w,h,r=12){ctx.beginPath();ctx.roundRect(x,y,w,h,r)}
+function pdfText(ctx,value,x,y,size=20,color='#172633',bold=false){ctx.font=`${bold?'700 ':'400 '}${size}px Arial, sans-serif`;ctx.fillStyle=color;ctx.fillText(String(value??''),x,y)}
+function pdfRight(ctx,value,right,y,size=20,color='#172633',bold=false){ctx.font=`${bold?'700 ':'400 '}${size}px Arial, sans-serif`;ctx.fillStyle=color;const v=String(value??'');ctx.fillText(v,right-ctx.measureText(v).width,y)}
+function pdfClipped(ctx,value,x,y,maxWidth,size=20,bold=false,color='#172633'){
+ ctx.font=`${bold?'700 ':'400 '}${size}px Arial, sans-serif`;
+ let s=String(value??'—');
+ while(s.length>2&&ctx.measureText(s).width>maxWidth)s=s.slice(0,-2)+'…';
+ ctx.fillStyle=color;ctx.fillText(s,x,y);
 }
-function pdfLines(ctx,value,x,y,width,size=18,leading=27,color='#45566a'){
- ctx.font=`${size}px Arial, sans-serif`;ctx.fillStyle=color;
- for(const line of pdfWrap(ctx,value,width)){if(line)ctx.fillText(line,x,y);y+=leading}
+function pdfLines(ctx,value,x,y,width,size=19,leading=29,color='#485c6d',limit=99){
+ ctx.font=`${size}px Arial, sans-serif`;
+ const lines=pdfWrap(ctx,value,width);
+ ctx.fillStyle=color;
+ for(const part of lines.slice(0,limit)){if(part)ctx.fillText(part,x,y);y+=leading}
  return y;
 }
-function pdfMoneyRight(ctx,cents,right,y,bold=false,size=21){
- ctx.font=`${bold?'bold ':''}${size}px Arial, sans-serif`;ctx.fillStyle='#142638';
- const v=moneyR(Number(cents)||0);ctx.fillText(v,right-ctx.measureText(v).width,y)
-}
-function pdfRound(ctx,x,y,w,h,r=16){ctx.beginPath();ctx.roundRect(x,y,w,h,r)}
 async function documentPages({type,reference,company={},customer={},vehicle={},lines=[],detail='',meta=[],footer='',vatRate=0,amounts={}}){
- const W=1240,H=1754,M=70,RIGHT=W-M;
- const navy='#152637',muted='#64748b',line='#e4e9ee',gold='#e7ae28',light='#f5f7fa';
- const logo=await logoImage(company?.logo_data);const docs=[];
- const infoRows=(meta||[]).filter(v=>Array.isArray(v)&&v[1]!==undefined&&v[1]!==null&&String(v[1]).trim());
- const items=(Array.isArray(lines)?lines:[]).length?lines:[{category:'work',description:'Refer to the work description / inspection notes',qty_milli:1000,unit_cents:0,line_cents:0}];
- let pos=0,detailIndex=0,page=0;const firstTitle=String(type||'WORKSHOP DOCUMENT').toUpperCase();
- // Pre-wrap once, preserving every assessment line rather than truncating it.
- const measure=document.createElement('canvas').getContext('2d');measure.font='19px Arial, sans-serif';
- const noteLines=String(detail||'').trim()?pdfWrap(measure,detail,1075):[];
- const measuredItems=items.map(x=>{measure.font='19px Arial, sans-serif';const description=String(x.description||'—');return {...x,_display:pdfWrap(measure,description,605),_category:String(x.category||'WORK').toUpperCase()}});
- const titleIsBill=/INVOICE|ESTIMATE|QUOTATION/i.test(firstTitle);
- do{
-  page++;
+ const W=1240,H=1754,M=76,R=1164,WIDTH=R-M;
+ const ink='#142532',soft='#4f6474',muted='#81919d',gold='#cf9b29',light='#f4f6f7',rule='#dfe5e9',paper='#fff';
+ const logo=await logoImage(company?.logo_data);
+ const title=String(type||'WORKSHOP DOCUMENT').toUpperCase();
+ const isBill=/INVOICE|ESTIMATE|QUOTATION/i.test(title);
+ const ref=String(reference||'—');
+ const documentMeta=(meta||[]).filter(x=>Array.isArray(x)&&x[1]!==null&&x[1]!==undefined&&String(x[1]).trim());
+ const items=Array.isArray(lines)&&lines.length?lines:[{category:'service',description:'Please refer to the work description above',qty_milli:1000,unit_cents:0,line_cents:0}];
+ const measure=document.createElement('canvas').getContext('2d');
+ measure.font='20px Arial, sans-serif';
+ const scope=String(detail||'').trim()?pdfWrap(measure,detail,WIDTH-48):[];
+ const itemLines=items.map(row=>{measure.font='20px Arial, sans-serif';return {row,parts:pdfWrap(measure,row.description||'Service item',580)}});
+ measure.font='17px Arial, sans-serif';
+ const termLines=pdfWrap(measure,String(footer||company.terms||'Please contact the workshop for further information.'),isBill?560:WIDTH);
+ let termPos=0;
+ const docs=[];
+ let pageNo=0,noteIdx=0,itemIdx=0,itemLineIdx=0,totalsDone=false;
+ // All original saved figures are preserved; rendering never recalculates price or tax.
+ while(!totalsDone||termPos<termLines.length){
+  if(++pageNo>60)throw Error('Document exceeds 60 pages');
   const {canvas,ctx}=makeCanvas();
-  ctx.fillStyle=navy;ctx.fillRect(0,0,W,14);
-  // Branded company header, company identity on EVERY page.
-  ctx.fillStyle=light;pdfRound(ctx,M,54,232,142,14);ctx.fill();
+  ctx.fillStyle=paper;ctx.fillRect(0,0,W,H);
+  // Minimal editorial header with a customer-uploaded company logo.
+  ctx.fillStyle=ink;ctx.fillRect(0,0,W,12);
+  const logoX=M,logoY=63,logoW=190,logoH=130;
   if(logo){
-   const scale=Math.min(200/logo.width,112/logo.height);
+   ctx.fillStyle=paper;pdfRound(ctx,logoX,logoY,logoW,logoH,9);ctx.fill();
+   const scale=Math.min((logoW-12)/logo.width,(logoH-12)/logo.height);
    const w=logo.width*scale,h=logo.height*scale;
-   ctx.drawImage(logo,M+(232-w)/2,54+(142-h)/2,w,h)
+   ctx.drawImage(logo,logoX+(logoW-w)/2,logoY+(logoH-h)/2,w,h);
   }else{
-   ctx.strokeStyle='#d5dde6';ctx.lineWidth=2;ctx.setLineDash([7,5]);pdfRound(ctx,M+12,66,208,118,10);ctx.stroke();ctx.setLineDash([]);
-   pdfLabel(ctx,'NO LOGO',M+65,122);ctx.font='17px Arial';ctx.fillStyle=muted;ctx.fillText('UPLOADED',M+65,148)
+   ctx.fillStyle=light;pdfRound(ctx,logoX,logoY,logoW,logoH,10);ctx.fill();
+   ctx.strokeStyle=rule;ctx.lineWidth=2;pdfRound(ctx,logoX,logoY,logoW,logoH,10);ctx.stroke();
+   pdfText(ctx,'NO LOGO',logoX+39,logoY+63,22,soft,true);
+   pdfText(ctx,'UPLOADED',logoX+34,logoY+92,18,muted);
   }
-  let identityY=90;
-  pdfValue(ctx,company.trading_name||company.legal_name||'Workshop',335,identityY,830,31,true);
-  identityY+=39;
-  const address=String(company.address||'').trim();
-  if(address)identityY=pdfLines(ctx,address,335,identityY,810,18,24);
-  const contact=[company.phone,company.email].filter(Boolean).join('  •  ');
-  if(contact)identityY=pdfLines(ctx,contact,335,identityY+2,810,18,24);
-  const reg=[company.registration_no?`Company reg: ${company.registration_no}`:'',company.vat_mode==='vat_vendor'&&company.vat_no?`VAT reg: ${company.vat_no}`:''].filter(Boolean).join('  •  ');
-  if(reg)identityY=pdfLines(ctx,reg,335,identityY+1,810,16,21);
-  ctx.fillStyle=gold;ctx.fillRect(M,215,W-2*M,5);
-  ctx.fillStyle=navy;pdfRound(ctx,M,243,W-2*M,126,14);ctx.fill();
-  ctx.font='bold 37px Arial';ctx.fillStyle='#fff';ctx.fillText(firstTitle,M+28,296);
-  ctx.font='18px Arial';ctx.fillStyle='#d1dce5';ctx.fillText('Customer document  •  '+(page===1?'Original':'Continued'),M+30,333);
-  ctx.font='bold 22px Arial';ctx.fillStyle='#fff';const ref=String(reference||'—');ctx.fillText(ref,RIGHT-34-ctx.measureText(ref).width,298);
-  ctx.font='17px Arial';ctx.fillStyle='#d1dce5';const pageText=`PAGE ${page}`;ctx.fillText(pageText,RIGHT-34-ctx.measureText(pageText).width,336);
-  let y=398;
-  // Customer and vehicle cards, only first page (more room for continuation rows).
-  if(page===1){
-   ctx.fillStyle=light;pdfRound(ctx,M,y,536,154,14);ctx.fill();pdfRound(ctx,624,y,546,154,14);ctx.fill();
-   pdfLabel(ctx,'CUSTOMER DETAILS',M+22,y+31);pdfValue(ctx,customer.name||'Not provided',M+22,y+70,490,25);
-   if(customer.phone)pdfValue(ctx,customer.phone,M+22,y+106,490,20,false);
-   pdfLabel(ctx,'VEHICLE / REPAIR JOB',646,y+31);
-   pdfValue(ctx,[vehicle.registration,vehicle.make,vehicle.model].filter(Boolean).join('  |  ')||'Not assigned',646,y+71,490,21);
-   if(vehicle.vin)pdfValue(ctx,'VIN: '+vehicle.vin,646,y+109,490,18,false);
-   y+=173;
-   if(infoRows.length){
-    const cards=infoRows.slice(0,6);const cols=3,rows=Math.ceil(cards.length/cols),bh=67;
-    ctx.strokeStyle=line;ctx.lineWidth=1;pdfRound(ctx,M,y,W-2*M,rows*bh+14,12);ctx.stroke();
-    cards.forEach(([k,v],i)=>{const col=i%cols,r=Math.floor(i/cols),x=M+22+col*364,sy=y+29+r*bh;
-     pdfLabel(ctx,k,x,sy);pdfValue(ctx,v,x,sy+29,327,19,true)
-    });y+=rows*bh+30;
+  const cx=301,cw=WIDTH-(cx-M);
+  pdfClipped(ctx,company.trading_name||company.legal_name||'Automotive workshop',cx,93,cw,33,true,ink);
+  let iy=124;
+  if(company.address)iy=pdfLines(ctx,company.address,cx,iy,cw,18,24,soft,2);
+  const contact=[company.phone,company.email].filter(Boolean).join('    •    ');
+  if(contact)iy=pdfLines(ctx,contact,cx,iy+1,cw,18,24,soft,2);
+  const details=[company.registration_no?'Reg: '+company.registration_no:'',company.vat_mode==='vat_vendor'&&company.vat_no?'VAT: '+company.vat_no:''].filter(Boolean).join('    •    ');
+  if(details)pdfClipped(ctx,details,cx,Math.min(198,iy+1),cw,17,false,muted);
+  ctx.fillStyle=rule;ctx.fillRect(M,218,WIDTH,2);
+  // Clear document heading / reference panel.
+  pdfText(ctx,title,M,288,42,ink,true);
+  ctx.fillStyle=gold;ctx.fillRect(M,303,74,5);
+  pdfText(ctx,pageNo===1?'Prepared for your records':'Document continued',M,337,18,soft);
+  pdfRight(ctx,'REFERENCE',R,259,16,muted,true);
+  pdfRight(ctx,ref,R,294,24,ink,true);
+  pdfRight(ctx,'PAGE '+pageNo,R,330,18,soft);
+  let y=376;
+  if(pageNo===1){
+   const cardH=151, gap=22, w=(WIDTH-gap)/2;
+   // Clean two-column customer and vehicle cards with no heavy boxes.
+   ctx.fillStyle=light;pdfRound(ctx,M,y,w,cardH,12);ctx.fill();pdfRound(ctx,M+w+gap,y,w,cardH,12);ctx.fill();
+   pdfText(ctx,'BILL TO / CUSTOMER',M+22,y+31,16,muted,true);
+   pdfClipped(ctx,customer.name||'Customer not specified',M+22,y+70,w-44,24,true,ink);
+   if(customer.phone)pdfClipped(ctx,customer.phone,M+22,y+106,w-44,18,false,soft);
+   const vx=M+w+gap;
+   pdfText(ctx,'VEHICLE DETAILS',vx+22,y+31,16,muted,true);
+   pdfClipped(ctx,[vehicle.make,vehicle.model].filter(Boolean).join(' ')||'Vehicle not specified',vx+22,y+70,w-44,23,true,ink);
+   pdfClipped(ctx,'Reg: '+String(vehicle.registration||'—')+(vehicle.vin?'   •   VIN: '+vehicle.vin:''),vx+22,y+106,w-44,17,false,soft);
+   y+=cardH+25;
+   if(documentMeta.length){
+    const selected=documentMeta.slice(0,6),columns=3,chunk=370,rh=66;
+    const rows=Math.ceil(selected.length/columns);
+    for(let i=0;i<selected.length;i++){
+     const x=M+(i%columns)*chunk, yy=y+Math.floor(i/columns)*rh;
+     pdfText(ctx,String(selected[i][0]).toUpperCase(),x,yy+16,15,muted,true);
+     pdfClipped(ctx,selected[i][1],x,yy+47,chunk-22,19,true,ink);
+    }
+    y+=rows*rh+18;
    }
   }else{
-   ctx.font='19px Arial';ctx.fillStyle=muted;ctx.fillText('Customer: '+String(customer.name||'—')+'    •    Vehicle: '+String(vehicle.registration||'—'),M,y+5);y+=33;
+   pdfClipped(ctx,'CUSTOMER: '+(customer.name||'—')+'     •     VEHICLE: '+(vehicle.registration||'—'),M,y,WIDTH,19,false,soft);
+   y+=36;
   }
-  // Full work scope, may continue over several pages.
-  if(detailIndex<noteLines.length){
-   pdfLabel(ctx,page===1?'ASSESSMENT & REPAIR SCOPE':'REPAIR SCOPE (CONTINUED)',M,y+10);y+=33;
-   const usable=Math.max(0,Math.floor((1030-y)/26));
-   const count=Math.min(usable,noteLines.length-detailIndex);
-   if(count>0){
-    ctx.fillStyle='#fcfdfe';pdfRound(ctx,M,y-10,W-2*M,count*26+25,10);ctx.fill();
-    ctx.font='19px Arial';ctx.fillStyle='#3f5265';
-    for(let i=0;i<count;i++){const val=noteLines[detailIndex++];if(val)ctx.fillText(val,M+17,y+18+i*26)}
-    y+=count*26+39;
+  // Work scope is allowed to flow to subsequent pages without truncation.
+  if(noteIdx<scope.length){
+   pdfText(ctx,noteIdx===0?'ASSESSMENT & REPAIR SCOPE':'REPAIR SCOPE — CONTINUED',M,y+20,21,ink,true);
+   y+=43;
+   ctx.fillStyle=light;pdfRound(ctx,M,y-4,WIDTH,Math.min(100,Math.max(54,(scope.length-noteIdx)*29+23)),8);ctx.fill();
+   const available=Math.max(1,Math.floor((1200-y-23)/29));
+   const count=Math.min(available,scope.length-noteIdx);
+   ctx.fillStyle=soft;ctx.font='19px Arial, sans-serif';
+   // Repaint background accurately for displayed lines.
+   ctx.fillStyle=paper;ctx.fillRect(M,y-5,WIDTH,Math.min(840,Math.max(54,count*29+23)));
+   ctx.fillStyle=light;pdfRound(ctx,M,y-5,WIDTH,count*29+19,10);ctx.fill();
+   ctx.fillStyle=soft;
+   for(let i=0;i<count;i++){
+    const v=scope[noteIdx++];if(v)ctx.fillText(v,M+20,y+25+i*29);
+   }
+   y+=count*29+40;
+  }
+  // Item lines are broken across pages, including unusually long descriptions.
+  if(noteIdx>=scope.length){
+   if(itemIdx<itemLines.length){
+    if(y>1300){/* table begins on next page */}
+    else {
+     pdfText(ctx,'REPAIR & SERVICE ITEMS',M,y+19,21,ink,true);y+=44;
+     ctx.fillStyle=ink;pdfRound(ctx,M,y,WIDTH,49,7);ctx.fill();
+     pdfText(ctx,'DESCRIPTION',M+18,y+32,16,paper,true);
+     pdfRight(ctx,'QTY',M+759,y+32,16,paper,true);
+     pdfRight(ctx,'UNIT PRICE',M+936,y+32,16,paper,true);
+     pdfRight(ctx,'AMOUNT',R-19,y+32,16,paper,true);
+     y+=61;
+     while(itemIdx<itemLines.length&&y<1430){
+      const {row,parts}=itemLines[itemIdx];
+      const available=Math.floor((1430-y-42)/27);
+      if(available<1)break;
+      const chunks=Math.min(Math.max(1,available),Math.max(1,parts.length-itemLineIdx));
+      const height=Math.max(83,50+chunks*27);
+      if(y+height>1475)break;
+      if(itemIdx%2===0){ctx.fillStyle='#f8fafb';ctx.fillRect(M,y-4,WIDTH,height)}
+      ctx.fillStyle=gold;ctx.fillRect(M,y+5,3,Math.max(35,height-25));
+      if(itemLineIdx===0){pdfText(ctx,String(row.category||'SERVICE').replaceAll('_',' ').toUpperCase(),M+19,y+18,14,muted,true)}
+      ctx.fillStyle=ink;ctx.font='19px Arial, sans-serif';
+      for(let i=0;i<chunks;i++){
+       const part=parts[itemLineIdx+i];if(part)ctx.fillText(part,M+19,y+48+i*27);
+      }
+      if(itemLineIdx===0){
+       const qty=Number(row.qty_milli??1000)/1000;
+       pdfRight(ctx,qty.toLocaleString('en-ZA',{maximumFractionDigits:3}),M+757,y+53,19,ink);
+       pdfRight(ctx,moneyR(Number(row.unit_cents)||0),M+936,y+53,18,soft);
+       pdfRight(ctx,moneyR(Number(row.line_cents)||0),R-19,y+53,19,ink,true);
+      }
+      ctx.fillStyle=rule;ctx.fillRect(M,y+height-3,WIDTH,1);
+      y+=height;itemLineIdx+=chunks;
+      if(itemLineIdx>=parts.length){itemLineIdx=0;itemIdx++}
+      else break;
+     }
+    }
    }
   }
-  // Item table with dynamic rows and no truncation.
-  if(detailIndex>=noteLines.length){
-   y+=10;ctx.fillStyle='#eaf0f5';pdfRound(ctx,M,y,W-2*M,48,7);ctx.fill();
-   pdfLabel(ctx,'CATEGORY / REPAIR DESCRIPTION',M+16,y+31);
-   pdfLabel(ctx,'QTY',M+756,y+31);pdfLabel(ctx,'UNIT PRICE',M+845,y+31);pdfLabel(ctx,'AMOUNT',M+986,y+31);
-   y+=58;
-   while(pos<measuredItems.length){
-    const row=measuredItems[pos],wrapped=row._display.length?row._display:['—'];
-    const rowH=Math.max(74,41+wrapped.length*25);
-    // Keep totals and terms on the final page; otherwise use most of the page.
-    const last=pos===measuredItems.length-1;
-    const limit=(last?1340:1470);
-    if(y+rowH>limit&&y>660)break;
-    if(pos%2===0){ctx.fillStyle='#fafbfd';ctx.fillRect(M,y-5,W-2*M,rowH)}
-    ctx.font='bold 15px Arial';ctx.fillStyle='#7a8797';ctx.fillText(row._category,M+16,y+18);
-    ctx.font='19px Arial';ctx.fillStyle=navy;
-    wrapped.forEach((v,i)=>ctx.fillText(v,M+16,y+46+i*25));
-    pdfValue(ctx,(Number(row.qty_milli||1000)/1000).toLocaleString('en-ZA',{maximumFractionDigits:3}),M+756,y+43,82,19,false);
-    pdfMoneyRight(ctx,row.unit_cents||0,M+971,y+43,false,18);
-    pdfMoneyRight(ctx,row.line_cents||0,RIGHT-13,y+43,true,19);
-    ctx.fillStyle=line;ctx.fillRect(M,y+rowH-4,W-2*M,1);
-    y+=rowH;pos++;
+  if(!totalsDone&&noteIdx>=scope.length&&itemIdx>=itemLines.length){
+   if(isBill){
+    // If the bill summary will not fit, continue to a clean summary page.
+    if(y<1330){
+     y+=23;
+     // Terms sit beside the charges summary, instead of being lost beneath it.
+     pdfText(ctx,'NOTES & TERMS',M,y+29,17,ink,true);
+     ctx.fillStyle=soft;ctx.font='17px Arial, sans-serif';
+     const maxInline=6;
+     for(let i=0;termPos<termLines.length&&i<maxInline;i++){
+      const part=termLines[termPos++];if(part)ctx.fillText(part,M,y+62+i*23);
+     }
+     ctx.fillStyle=light;pdfRound(ctx,703,y,461,180,11);ctx.fill();
+     pdfText(ctx,'SUMMARY OF CHARGES',724,y+32,16,muted,true);
+     pdfText(ctx,'Subtotal',724,y+70,19,soft);pdfRight(ctx,moneyR(amounts.subtotal_cents||0),R-20,y+70,19,ink);
+     pdfText(ctx,'VAT ('+(Number(vatRate)||0)+'%)',724,y+101,19,soft);pdfRight(ctx,moneyR(amounts.vat_cents||0),R-20,y+101,19,ink);
+     ctx.fillStyle=gold;ctx.fillRect(723,y+113,417,2);
+     pdfText(ctx,'TOTAL DUE',724,y+152,22,ink,true);pdfRight(ctx,moneyR(amounts.total_cents||0),R-20,y+153,26,ink,true);
+     y+=194;totalsDone=true;
+    }
+   }else totalsDone=true;
+  }
+  if(totalsDone){
+   // Any longer terms go to a neatly formatted continuation page.
+   if(termPos<termLines.length){
+    if(y<=1250||(!isBill&&y<1500)){
+     pdfText(ctx,'ADDITIONAL NOTES & TERMS',M,y+19,21,ink,true);
+     y+=50;ctx.fillStyle=soft;ctx.font='18px Arial, sans-serif';
+     const room=Math.max(1,Math.floor((1530-y)/28));
+     for(let i=0;termPos<termLines.length&&i<room;i++){
+      const part=termLines[termPos++];if(part)ctx.fillText(part,M,y+i*28);
+     }
+    }
+   }
+   if(!isBill&&y<1460){
+    const sy=Math.max(1450,y+118);
+    ctx.fillStyle=rule;ctx.fillRect(M,sy,440,1);ctx.fillRect(667,sy,497,1);
+    pdfText(ctx,'WORKSHOP / AUTHORISED SIGNATURE',M,sy+25,15,muted,true);
+    pdfText(ctx,'CUSTOMER / RECEIVED BY',667,sy+25,15,muted,true);
    }
   }
-  const completed=pos===measuredItems.length&&detailIndex===noteLines.length;
-  if(completed){
-   const sub=Number(amounts.subtotal_cents||0),vat=Number(amounts.vat_cents||0),total=Number(amounts.total_cents||0);
-   y+=22;
-   if(titleIsBill){
-    // Totals immediately following item table, not pinned far down the page.
-    ctx.fillStyle=light;pdfRound(ctx,703,y,467,152,12);ctx.fill();
-    ctx.font='20px Arial';ctx.fillStyle='#4b5e70';ctx.fillText('Subtotal',724,y+40);pdfMoneyRight(ctx,sub,1147,y+40,false,20);
-    ctx.fillText(`VAT (${Number(vatRate)||0}%)`,724,y+77);pdfMoneyRight(ctx,vat,1147,y+77,false,20);
-    ctx.fillStyle=gold;ctx.fillRect(720,y+93,432,2);
-    ctx.font='bold 25px Arial';ctx.fillStyle=navy;ctx.fillText('TOTAL',724,y+127);pdfMoneyRight(ctx,total,1147,y+127,true,26);
-    y+=174;
-   }
-   if(y<1503){
-    ctx.strokeStyle='#dfe5ed';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(M,y+20);ctx.lineTo(RIGHT,y+20);ctx.stroke();
-    pdfLabel(ctx,'NOTES / TERMS',M,y+57);
-    const note=String(footer||company.terms||'Please contact the workshop for further information.');
-    const room=Math.max(1,Math.floor((1597-(y+92))/24));
-    const ft=pdfWrap(ctx,note,W-2*M);
-    ctx.font='17px Arial';ctx.fillStyle='#4b5e70';ft.slice(0,room).forEach((v,i)=>ctx.fillText(v,M,y+91+i*24));
-   }
-  }
-  // Footer and page number, consistent even on continuation pages.
-  ctx.fillStyle='#e7edf3';ctx.fillRect(M,1632,W-2*M,2);
-  ctx.font='16px Arial';ctx.fillStyle=muted;
-  ctx.fillText('Issued by '+String(company.trading_name||company.legal_name||'Workshop'),M,1664);
-  ctx.fillText('Document reference: '+ref,M,1690);
-  ctx.font='bold 16px Arial';const pg=`PAGE ${page}`;ctx.fillText(pg,RIGHT-ctx.measureText(pg).width,1684);
-  ctx.fillStyle=navy;ctx.fillRect(0,H-12,W,12);
-  docs.push(canvas.toDataURL('image/jpeg',.93).split(',')[1]);
-  if(page>50)throw Error('Document too long to generate');
- }while(pos<measuredItems.length||detailIndex<noteLines.length);
+  // Consistent unobtrusive footer for printed paperwork.
+  ctx.fillStyle=rule;ctx.fillRect(M,1635,WIDTH,1);
+  pdfClipped(ctx,company.trading_name||company.legal_name||'Automotive Workshop',M,1672,470,17,true,soft);
+  pdfText(ctx,'Ref: '+ref,M,1700,16,muted);
+  pdfRight(ctx,'PAGE '+pageNo,R,1682,17,muted,true);
+  ctx.fillStyle=gold;ctx.fillRect(M,1728,WIDTH,5);
+  docs.push(canvas.toDataURL('image/jpeg',.92).split(',')[1]);
+ }
  return docs;
 }
 function b64ToBytes(b64){const bin=atob(b64),out=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)out[i]=bin.charCodeAt(i);return out}

@@ -1,0 +1,21 @@
+SULMOS26 AUTOMOTIVE V42 — PREMIUM PDF REDESIGN
+
+Only the Panel Beater Edition is changed.
+
+1. Extract this ZIP.
+2. In GitHub mos00000006/sulmos26-panel-beaterss, replace exactly:
+     public/app.js
+     public/index.html
+   Do NOT replace backend, migrations, database, app logos, or Retail files.
+3. Commit to main and check Panel Beater Check.
+4. Run the dedicated GitHub Actions deployment workflow:
+     Deploy SULMOS26 Panel Beater V38
+   The old Pages build alone does NOT publish this Worker.
+5. Open the Cloudflare Worker site, reload using Ctrl+Shift+R, sign in.
+6. Under Company Branding ensure the company logo is saved; reload and check the logo preview remains.
+7. Download a repair estimate or invoice again. Verify the new header, details, service lines, totals and terms.
+
+This is a presentation-only PDF frontend patch. It uses the existing server-confirmed amounts, company name and logo. No monetary or VAT logic has been changed.
+
+A4 sample and preview are included for inspection; fictitious sample data is used.
+Note: VAT tax-invoice compliance still requires legal/accounting review before business use.

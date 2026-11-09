@@ -1,14 +1,13 @@
-SULMOS26 PANEL BEATER V40 — GITHUB TEST FIX
+SULMOS26 AUTOMOTIVE — VISUAL DAMAGE MAPPING PREVIEW
 
-Fixes failing architecture test #4 after installing V40 PDF redesign.
+Open index.html in Chrome or Edge. Click a part of the top-view car,
+select severity and action, add notes, and click Save damaged panel.
+Print / Save PDF uses your browser print dialog.
 
-The updated PDF renderer uses company?.logo_data (optional chaining), whereas
-an older architecture test only matched company.logo_data.
+IMPORTANT: This is a standalone INTERACTIVE PREVIEW, not a production
+integration patch. It does not write to D1, link to live jobs or
+synchronize across users. Do not use real customer data.
 
-Replace ONLY tests/architecture.test.mjs in GitHub:
-https://github.com/mos00000006/sulmos26-panel-beaterss/edit/main/tests/architecture.test.mjs
-
-Do NOT replace public/app.js or backend for this fix. Keep your V40 app.js.
-Commit to main, confirm Panel Beater Check passes, then run deployment.
-
-Local verification: 8 / 8 tests pass using the V40 public/app.js and V37 backend.
+Production integration should persist panel damage records and notes per
+company and job in D1 with staff role checks, audit log, optional photos,
+and connect the damage map to the repair estimate and intake PDFs.
