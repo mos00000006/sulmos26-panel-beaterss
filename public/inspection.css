@@ -30,3 +30,11 @@
 #outlineTip{font-size:12px;color:#657b8f;padding:6px;text-align:center}
 @media(max-width:600px){.outline-views button{padding:6px 9px;font-size:11px}.outline-svg svg{max-height:230px}}
 @media print{#drawingPreview{position:relative;height:105mm}.outline-views,#outlineTip{display:none!important}.outline-svg svg{max-height:105mm}}
+
+/* V47: white-paper automotive blueprint drawing, faithful to multi-angle inspection sheets */
+#drawingPreview{background:#fff;}
+.outline-svg svg{max-height:440px;filter:none;}
+.outline-views{border-bottom:1px solid #e8edf2;width:100%;padding-bottom:12px;}
+.outline-views button.active{background:#183047;border-color:#183047;}
+.blueprint-perspective [data-panel]:hover,.blueprint-perspective [data-panel]:focus{stroke:#d52532;stroke-width:5;}
+@media(max-width:600px){.outline-svg svg{max-height:260px}}

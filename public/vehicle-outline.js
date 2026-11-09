@@ -48,5 +48,63 @@
   const lamps=front?['left_headlamp','right_headlamp']:['left_tail_lamp','right_tail_lamp'];
   return start+`<ellipse cx="500" cy="414" rx="290" ry="24" fill="#dae4eb"/><path d="M269 396 L267 268 Q278 224 324 223 L350 152 Q365 132 405 131 H595 Q637 135 650 152 L677 223 Q721 230 731 272 L733 396 Z" fill="${colour}" stroke="#32495a" stroke-width="5"/>${piece('roof','M358 150 Q390 129 420 130 H580 Q617 132 647 150 L634 172 H370 Z')}${piece(front?'windscreen':'rear_glass','M355 178 Q362 152 394 151 H607 Q637 154 648 178 L669 244 H332 Z')} ${piece(lamps[0],'M281 284 L382 273 L389 315 L277 330 Z')}${piece(lamps[1],'M618 273 L715 284 L723 330 L612 315 Z')}${piece(front?'front_bumper':'rear_bumper','M270 348 H732 V406 H270 Z')}<rect x="400" y="335" width="200" height="23" rx="8" fill="#364c5e"/><rect x="410" y="371" width="180" height="23" rx="6" fill="#eaf1f5" stroke="#344b5c" stroke-width="2"/><circle cx="293" cy="405" r="24" fill="#263745"/><circle cx="705" cy="405" r="24" fill="#263745"/>`+end;
  }
- window.SulmosOutline={svg,kind,names,TYPES};
+ 
+ // V47: hand-drawn, blueprint-style front three-quarter body view, with selectable vehicle panels.
+ // Original vehicle artwork; does not claim to be a specific manufacturer's vehicle.
+ function technicalPerspective({type='suv',colour='#ffffff',damage=[]}={}){
+  if(!TYPES.includes(type))type='sedan';
+  const mark=Object.fromEntries(damage.map(d=>[d.panel,d.severity]));
+  const pal={minor:'#ffdb70',moderate:'#ffad64',severe:'#f36c72',replace:'#ba87d9'};
+  const ink='#152536',fine='#41566a',glass='#f3f8fb';
+  const suv=['suv','wagon','van'].includes(type),pickup=type==='pickup',hatch=type==='hatchback',coupe=type==='coupe';
+  const roofLift=type==='van'?85:suv?116:coupe?151:144;
+  const roofRear=pickup?535:type==='van'?773:suv?691:hatch?622:641;
+  const base=colour==='#ffffff'?'#fdfefe':colour;
+  function part(id,path){const c=mark[id]?pal[mark[id]]||pal.severe:base;return `<path data-panel="${id}" tabindex="0" role="button" aria-label="${id.replaceAll('_',' ')}" d="${path}" fill="${c}" stroke="${ink}" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>`}
+  function wheel(x,y,scale=1){let spoke='';for(let i=0;i<10;i++){let a=i*36;spoke+=`<path d="M ${x} ${y-9*scale} L ${x} ${y-31*scale}" transform="rotate(${a} ${x} ${y})" stroke="${fine}" stroke-width="2.7"/>`}
+    return `<g><ellipse cx="${x}" cy="${y}" rx="${49*scale}" ry="${55*scale}" fill="#1d2935" stroke="${ink}" stroke-width="3"/><ellipse cx="${x}" cy="${y}" rx="${34*scale}" ry="${39*scale}" fill="#f8fafc" stroke="${ink}" stroke-width="3"/>${spoke}<ellipse cx="${x}" cy="${y}" rx="${9*scale}" ry="${10*scale}" fill="#d9e0e7" stroke="${ink}" stroke-width="2"/></g>`}
+  const baseSvg=`<svg class="sulmos-outline blueprint-perspective" xmlns="${NS}" viewBox="0 0 1000 580" role="img" aria-label="Illustrative ${names[type]} front three-quarter technical drawing">
+   <rect width="1000" height="580" rx="10" fill="#fff"/>
+   <g fill="none" stroke="#edf1f4" stroke-width="1"><path d="M60 456 H946 M60 136 H946"/><path d="M100 35V530 M900 35V530" stroke-dasharray="4 8"/></g>
+   <path d="M177 468 C353 494 739 466 918 421" fill="none" stroke="#d1dbe3" stroke-width="2"/>
+   <!-- wheels behind visible body panels -->${wheel(723,392,.9)}${wheel(287,450,1.08)}
+   ${part('roof',`M 417 ${roofLift+36} Q 446 ${roofLift-14} 498 ${roofLift-15} L ${roofRear} ${roofLift-15} Q ${roofRear+25} ${roofLift-8} ${roofRear+49} ${roofLift+22} L 817 279 L 542 264 Z`)}
+   ${part('left_rear_quarter',`M ${roofRear+12} 284 L 827 300 Q 864 312 887 332 L 889 396 Q 850 410 799 414 L 737 391 L 723 341 Z`)}
+   ${part('left_rear_door',`M 616 275 L 738 276 L 786 382 L 699 407 L 629 395 Z`)}
+   ${part('left_front_door',`M 521 268 L 622 275 L 631 396 L 513 426 L 466 327 Z`)}
+   <!-- windscreen and far-side roof glass -->
+   <path d="M 438 ${roofLift+54} Q 458 ${roofLift+14} 502 ${roofLift+11} L 588 ${roofLift+13} L 559 274 L 410 271 Z" fill="${glass}" stroke="${ink}" stroke-width="3"/>
+   <path d="M 600 ${roofLift+13} L ${roofRear-13} ${roofLift+13} L 751 274 L 579 271 Z" fill="${glass}" stroke="${ink}" stroke-width="3"/>
+   <path d="M 577 272 L 588 ${roofLift+15}" stroke="${ink}" stroke-width="3"/>
+   ${part('windscreen',`M 406 272 L 439 ${roofLift+53} Q 455 ${roofLift+18} 502 ${roofLift+13} L 576 ${roofLift+16} L 545 282 Z`)}
+   <!-- bonnet and frontal surfaces -->
+   ${part('bonnet','M 198 327 L 408 268 L 543 283 L 474 368 L 217 402 L 133 382 Z')}
+   ${part('left_front_fender','M 473 365 L 544 283 L 522 425 L 428 454 L 399 408 Z')}
+   ${part('front_bumper','M 133 382 L 218 401 L 472 367 L 444 456 L 301 491 L 159 475 L 115 434 Z')}
+   ${part('left_headlamp','M 382 380 L 454 366 L 422 394 L 367 407 Z')}
+   ${part('right_headlamp','M 156 378 L 221 394 L 214 415 L 145 397 Z')}
+   <path d="M 168 430 L 300 462 L 398 437 M 174 440 L 297 472 L 396 448" fill="none" stroke="${ink}" stroke-width="3"/>
+   <path d="M 270 437 L 329 435 L 378 416 M 268 446 L 327 443 L 379 426" fill="none" stroke="${ink}" stroke-width="2"/>
+   <path d="M 180 455 Q 310 496 408 448" fill="none" stroke="${fine}" stroke-width="1.8"/>
+   <path d="M 468 320 L 483 311 L 512 320 L 497 330 Z" fill="#fff" stroke="${ink}" stroke-width="2.5"/>
+   <path d="M 623 314 L 639 312" stroke="${ink}" stroke-width="3" stroke-linecap="round"/>
+   <path d="M 733 323 L 747 321" stroke="${ink}" stroke-width="3" stroke-linecap="round"/>
+   <path d="M 524 423 L 630 391 L 699 406 L 785 383" fill="none" stroke="${fine}" stroke-width="1.8"/>
+   <path d="M 531 416 L 531 323 M 627 394 L 627 315" fill="none" stroke="${fine}" stroke-width="1.4"/>
+   <path d="M 780 300 L 854 316" fill="none" stroke="${ink}" stroke-width="2.5"/>
+   <path d="M 851 316 L 881 330 L 882 349 L 861 345 Z" fill="#f1f5f8" stroke="${ink}" stroke-width="2"/>
+   <!-- wheel edges redrawn to make body-panel boundaries obvious -->
+   <path d="M 236 445 Q 250 369 294 365 Q 348 366 356 447" fill="none" stroke="${ink}" stroke-width="3.2"/>
+   <path d="M 682 392 Q 687 342 721 339 Q 765 344 774 399" fill="none" stroke="${ink}" stroke-width="2.7"/>
+   <text x="35" y="546" font-family="Arial,sans-serif" font-size="17" fill="#78889a">${names[type].toUpperCase()} · GENERIC BODY DRAWING</text>
+   <text x="964" y="546" text-anchor="end" font-family="Arial,sans-serif" font-size="17" fill="#78889a">3/4 VIEW · CLICK A PANEL</text>
+   </svg>`;
+  return baseSvg;
+ }
+ function premiumSvg(opts={}){
+   if(opts.view==='perspective')return technicalPerspective(opts);
+   // Existing clickable orthographic drawings use neutral technical-ink treatment.
+   return svg(opts).replace('fill="#f5f8fb"','fill="#fff"').replace('stroke="#344959"','stroke="#263949"');
+ }
+ window.SulmosOutline={svg:premiumSvg,kind,names,TYPES};
 })();
