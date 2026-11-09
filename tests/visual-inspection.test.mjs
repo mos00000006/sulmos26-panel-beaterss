@@ -1,0 +1,11 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+const src=fs.readFileSync('src/index.js','utf8');
+const page=fs.readFileSync('public/inspection.html','utf8');
+const ui=fs.readFileSync('public/inspection.js','utf8');
+const main=fs.readFileSync('public/app.js','utf8');
+const migration=fs.readFileSync('migrations/0002_visual_damage.sql','utf8');
+test('isolated vehicle assessment data and migration',()=>{assert.match(src,/\/api\/visual-assessment/);assert.match(src,/companyScoped\(db,'jobs',cid/);assert.match(src,/revision=revision\+1/);assert.match(migration,/UNIQUE\(company_id,job_id\)/)});
+test('3D inspector has vehicle make model year and colour workflow',()=>{assert.match(ui,/S\.vehicle\?\.make/);assert.match(ui,/S\.vehicle\?\.model/);assert.match(ui,/S\.vehicle\?\.year/);assert.match(page,/id="colour"/);assert.match(ui,/await import\('three'\)/);assert.match(page,/type="importmap"/)});
+test('generic fallback explicitly disclosed; exact assets are local',()=>{assert.match(ui,/GENERIC 3D PREVIEW/);assert.match(ui,/NOT an exact/);assert.match(ui,/vehicle-models/);assert.match(main,/3D Damage Inspection/)});

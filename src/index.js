@@ -55,6 +55,33 @@ async function route(req,env){
  if(p==='/api/logout'&&req.method==='POST'){const token=req.headers.get('cookie')?.match(/sulmos_auto_session=([a-f0-9]{64})/)?.[1];if(token)await db.prepare('DELETE FROM sessions WHERE token_hash=?').bind(await digest(token)).run();return reply({ok:true},200,{'set-cookie':expired})}
  const u=await session(req,db);if(!u)return error('Sign in required',401);
  const cid=u.company_id;
+ if(p==='/api/visual-assessment'&&(req.method==='GET'||req.method==='PUT')){
+  const jobId=str(req.method==='GET'?url.searchParams.get('job_id'):body.job_id,60);
+  const job=await companyScoped(db,'jobs',cid,jobId);
+  if(!job)return error('Repair job not found',404);
+  if(u.role==='technician'&&job.technician_id!==u.id)return error('This job is not assigned to you',403);
+  if(req.method==='GET'){
+   const record=await db.prepare('SELECT id,job_id,vehicle_colour,vehicle_model_key,damage_json,revision,updated_at FROM visual_assessments WHERE company_id=? AND job_id=?').bind(cid,jobId).first();
+   const veh=await companyScoped(db,'vehicles',cid,job.vehicle_id);
+   return reply({assessment:record||null,vehicle:veh?{make:veh.make,model:veh.model,year:veh.year,colour:veh.colour,registration:veh.registration}:null,job:{id:job.id,reference:job.reference}});
+  }
+  if(!role(u,'owner','manager','estimator','reception','workshop'))return error('Assessment editing permission required',403);
+  const veh=await companyScoped(db,'vehicles',cid,job.vehicle_id);
+  const colour=str(body.vehicle_colour,40);if(!colour||!/^[\w #()/-]{1,40}$/.test(colour))return error('Enter a valid vehicle colour');
+  const allowedPanels=['front_bumper','rear_bumper','bonnet','roof','boot','left_front_fender','right_front_fender','left_front_door','right_front_door','left_rear_door','right_rear_door','left_rear_quarter','right_rear_quarter','left_headlamp','right_headlamp','left_tail_lamp','right_tail_lamp','windscreen','rear_glass'];
+  const severities=['minor','moderate','severe','replace'];const actions=['repair','replace','respray','inspect'];
+  const damage=arr(body.damage);if(damage.length>allowedPanels.length)return error('Too many damage panels');
+  const seen=new Set(),validated=[];
+  for(const d of damage){const panel=str(d.panel,50),severity=str(d.severity,20),action=str(d.action,20),note=str(d.note,500);if(!allowedPanels.includes(panel)||!severities.includes(severity)||!actions.includes(action)||seen.has(panel))return error('Invalid damage panel or action');seen.add(panel);validated.push({panel,severity,action,note})}
+  const revision=int(body.revision,1000000);if(revision===null)return error('Invalid assessment revision');
+  const modelKey=[str(veh?.make,60),str(veh?.model,80),String(veh?.year||'')].map(x=>x.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')).join('/');
+  const existing=await db.prepare('SELECT revision FROM visual_assessments WHERE company_id=? AND job_id=?').bind(cid,jobId).first();
+  const ts=now(),payload=JSON.stringify(validated);
+  if(!existing){if(revision!==0)return error('Assessment has changed; reload before saving',409);
+   await db.prepare('INSERT OR IGNORE INTO visual_assessments(id,company_id,job_id,vehicle_colour,vehicle_model_key,damage_json,revision,created_by,updated_by,created_at,updated_at) VALUES(?,?,?,?,?,?,1,?,?,?,?)').bind(id(),cid,jobId,colour,modelKey,payload,u.id,u.id,ts,ts).run();
+  }else{const result=await db.prepare('UPDATE visual_assessments SET vehicle_colour=?,vehicle_model_key=?,damage_json=?,revision=revision+1,updated_by=?,updated_at=? WHERE company_id=? AND job_id=? AND revision=?').bind(colour,modelKey,payload,u.id,ts,cid,jobId,revision).run();if(result.meta?.changes!==1)return error('Assessment was edited by another user. Reload before saving.',409)}
+  await log(db,u,'visual_assessment.save','job',jobId,JSON.stringify({panels:validated.length}));return reply({ok:true});
+ }
  if(p==='/api/me'&&req.method==='GET'){const c=await db.prepare('SELECT * FROM companies WHERE id=?').bind(cid).first();return reply({user:{id:u.id,name:u.name,role:u.role,username:u.username},company:c})}
  if(p==='/api/company'&&req.method==='PUT'){
   if(!can(u,'settings'))return error('Owner permission required',403);
