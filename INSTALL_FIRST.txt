@@ -1,0 +1,24 @@
+SULMOS26 Automotive V44 — Accurate 3D model display fix
+
+PROBLEM
+The previous V43 fallback used a box-built generic car. It was not a Toyota RAV4 2019.
+
+WHAT CHANGED
+- The inaccurate blocky car is no longer displayed.
+- A correct matching GLB model is required before 3D rotation activates.
+- The operator may choose an appropriately licensed .glb file on their computer for a temporary preview.
+- For permanent model availability, add the asset to the GitHub repo as:
+  public/vehicle-models/toyota/rav4/2019.glb
+- The model must match the correct generation, body and trim.
+- Damage panel entry, D1 saving and printing remain usable without a 3D model.
+- This is not an included licensed Toyota RAV4 3D asset.
+
+INSTALL
+1. Replace public/inspection.html, public/inspection.js and public/inspection.css in the panel-beaterss repository.
+2. Commit to main.
+3. Run the existing Deploy SULMOS26 Panel Beater workflow.
+4. Open 3D Damage Inspection and hard-refresh the app.
+5. Select the job; confirm colour; if you have a legitimate RAV4 2019 GLB, select it via the model file input and load it.
+6. Once confirmed, upload your GLB to public/vehicle-models/toyota/rav4/2019.glb for future sessions and redeploy.
+
+Important: SULMOS26 must have permission to use/display the 3D model in a commercial application. Check the model's licence and redistribution terms before adding it to GitHub.
