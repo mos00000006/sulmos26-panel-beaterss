@@ -3,6 +3,6 @@
   "version":"1.0.0",
   "private":true,
   "type":"module",
-  "scripts":{"check":"node --check src/index.js && node --check public/app.js && node --test tests/*.test.mjs","deploy":"wrangler deploy","dev":"wrangler dev","migrate:local":"wrangler d1 migrations apply panel-beater-db --local","migrate:remote":"wrangler d1 migrations apply panel-beater-db --remote"},
+  "scripts":{"check":"node --check src/index.js && node --check public/app.js && node --check public/inspection.js && node --test tests/*.test.mjs","deploy":"wrangler deploy","dev":"wrangler dev","migrate:local":"wrangler d1 migrations apply panel-beater-db --local","migrate:remote":"wrangler d1 migrations apply panel-beater-db --remote"},
   "devDependencies":{"wrangler":"^4.92.0"}
 }
