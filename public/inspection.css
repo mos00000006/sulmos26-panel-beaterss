@@ -38,3 +38,9 @@
 .outline-views button.active{background:#183047;border-color:#183047;}
 .blueprint-perspective [data-panel]:hover,.blueprint-perspective [data-panel]:focus{stroke:#d52532;stroke-width:5;}
 @media(max-width:600px){.outline-svg svg{max-height:260px}}
+
+/* V48: crisp high-detail blueprint, without the flat geometric SUV drawing. */
+.outline-svg svg.v48-detailed{max-height:440px;filter:none;background:#fff;border:1px solid #eef1f5;border-radius:10px}
+.outline-svg .sulmos-hotspots [data-panel]{cursor:crosshair;pointer-events:all;transition:fill-opacity .15s ease,stroke-width .15s ease}
+.outline-svg .sulmos-hotspots [data-panel]:hover,.outline-svg .sulmos-hotspots [data-panel]:focus{fill-opacity:.20!important;stroke:#d92c37;stroke-width:3.5!important;outline:none;filter:none}
+@media(max-width:600px){.outline-svg svg.v48-detailed{max-height:260px}}
