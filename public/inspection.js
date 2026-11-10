@@ -81,6 +81,7 @@ function showInspectionWelcomeOnce(user){
   <h2 id="iw50-title">Hi, ${esc(name)}!</h2>
   <p id="iw50-description">Welcome to <b>3D Damage Inspection</b>. This section is still new, and our technical support team is continuing to improve the vehicle drawings and previews.</p>
   <div class="iw50-note"><strong>🛠 Improvements in progress</strong><span>You can keep marking damaged panels and saving assessments to repair jobs while this inspection workspace is being refined.</span></div>
+  <div class="iw50-support"><strong>For more information &amp; IT support</strong><span>IT Support Technician · Moses Moyana</span><a href="tel:+27614438789">☎ 061 443 8789</a><a href="mailto:moyanamoses006@gmail.com">✉ moyanamoses006@gmail.com</a></div>
   <button class="iw50-go" type="button">Continue to inspection</button>
   <small class="iw50-foot">Thank you for using SULMOS26 Automotive.</small>
  </section>`;
