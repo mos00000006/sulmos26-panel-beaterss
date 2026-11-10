@@ -44,3 +44,15 @@
 .outline-svg .sulmos-hotspots [data-panel]{cursor:crosshair;pointer-events:all;transition:fill-opacity .15s ease,stroke-width .15s ease}
 .outline-svg .sulmos-hotspots [data-panel]:hover,.outline-svg .sulmos-hotspots [data-panel]:focus{fill-opacity:.20!important;stroke:#d92c37;stroke-width:3.5!important;outline:none;filter:none}
 @media(max-width:600px){.outline-svg svg.v48-detailed{max-height:260px}}
+
+
+/* V50 — personalised notification for 3D Damage Inspection ONLY */
+.inspection-welcome-overlay{position:fixed;inset:0;z-index:100000;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(10,22,38,.66);backdrop-filter:blur(4px);overflow-y:auto}
+.inspection-welcome-card{position:relative;box-sizing:border-box;width:min(100%,510px);max-height:calc(100vh - 28px);overflow:auto;border-radius:22px;background:#fff;border:1px solid #e0e6ee;padding:30px;box-shadow:0 32px 90px #03102059;text-align:center;color:#16283a;font:inherit}
+.iw50-close{position:absolute;right:14px;top:12px;width:35px;height:35px;border:0;border-radius:50%;background:#f0f3f7;color:#24374c;cursor:pointer;font-size:25px;line-height:1}
+.iw50-brand{display:flex;justify-content:center;align-items:center;gap:11px;margin:0 0 20px}.iw50-brand img{width:43px;height:43px;object-fit:contain}.iw50-brand span{display:flex;flex-direction:column;text-align:left}.iw50-brand strong{font-size:18px;letter-spacing:.4px}.iw50-brand small{font-size:10px;font-weight:800;letter-spacing:1.2px;color:#667b90}
+.iw50-emoji{font-size:40px;display:block;margin:5px 0 14px}.iw50-eyebrow{font-size:10px;font-weight:850;letter-spacing:1.7px;color:#ad252f}.inspection-welcome-card h2{font-size:33px;line-height:1.2;margin:10px 0 14px;color:#12263a}.inspection-welcome-card>p{font-size:15px;line-height:1.7;color:#53687c;max-width:440px;margin:0 auto 20px}
+.iw50-note{background:#f4f7fa;border:1px solid #e4eaf1;border-radius:14px;text-align:left;padding:16px;display:flex;flex-direction:column;gap:6px;font-size:14px;line-height:1.55;color:#51667b}.iw50-note strong{color:#172a3c}
+.iw50-go{display:block;width:100%;margin-top:20px;border:0;border-radius:12px;background:#cf1c2c;color:#fff;font:inherit;font-weight:800;font-size:15px;padding:15px;cursor:pointer}.iw50-go:hover{background:#b31b29}.iw50-go:focus-visible,.iw50-close:focus-visible{outline:3px solid #f2b54a;outline-offset:3px}.iw50-foot{display:block;color:#8290a0;font-size:11px;margin-top:14px}
+@media(max-width:520px){.inspection-welcome-card{padding:24px 19px;border-radius:17px}.inspection-welcome-card h2{font-size:28px}}
+@media(prefers-reduced-motion:no-preference){.inspection-welcome-card{animation:inspection-welcome-appear .2s ease-out}@keyframes inspection-welcome-appear{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}}

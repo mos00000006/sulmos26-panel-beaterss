@@ -64,7 +64,41 @@ async function imageSnapshot(){let image=null;
  const w=image.videoWidth||image.naturalWidth||image.width,h=image.videoHeight||image.naturalHeight||image.height;const factor=Math.min(880/w,510/h);c.drawImage(image,(900-w*factor)/2,(540-h*factor)/2,w*factor,h*factor);
  for(let q=.72;q>=.18;q-=.12){const data=canvas.toDataURL('image/jpeg',q);if(data.length<175000)return data}return '';
 }
-async function start(){el('panel').innerHTML=Object.entries(panels).map(([v,n])=>`<option value="${v}">${n}</option>`).join('');try{const b=await api('bootstrap');S.userRole=b.user?.role||'';el('assetToggle').hidden=S.userRole!=='owner';if(!b.user){location.href='/';return}const j=await api('jobs');S.jobs=j.items||[];el('job').innerHTML='<option value="">Select repair job…</option>'+S.jobs.map(x=>`<option value="${esc(x.id)}">${esc(x.reference)} · ${esc(x.registration)} · ${esc(x.make)} ${esc(x.model)}</option>`).join('');const query=new URLSearchParams(location.search).get('job');if(query&&S.jobs.some(x=>x.id===query))el('job').value=query;await chooseJob()}catch(e){msg(e.message,true);if(e.message.includes('Sign in'))location.href='/'}
+
+// V50: Welcome notice belongs ONLY to the standalone 3D Damage Inspection workspace.
+// This script is never loaded on the main SULMOS26 Automotive dashboard.
+function showInspectionWelcomeOnce(user){
+ if(!user || document.getElementById('inspection-welcome-v50'))return;
+ const key='sulmos26-inspection-welcome-v50-'+String(user.id||user.username||'staff');
+ try{if(sessionStorage.getItem(key)==='seen')return}catch{}
+ const name=String(user.name||user.username||'Team member').trim().split(/\s+/)[0]||'Team member';
+ const overlay=document.createElement('div');overlay.id='inspection-welcome-v50';overlay.className='inspection-welcome-overlay';
+ overlay.innerHTML=`<section class="inspection-welcome-card" role="dialog" aria-modal="true" aria-labelledby="iw50-title" aria-describedby="iw50-description" tabindex="-1">
+  <button class="iw50-close" type="button" aria-label="Close welcome message">×</button>
+  <div class="iw50-brand"><img src="/assets/icon-192.png" alt="SULMOS26"><span><strong>SULMOS26</strong><small>3D DAMAGE INSPECTION</small></span></div>
+  <span class="iw50-emoji" aria-hidden="true">👋</span>
+  <div class="iw50-eyebrow">A MESSAGE FROM TECHNICAL SUPPORT</div>
+  <h2 id="iw50-title">Hi, ${esc(name)}!</h2>
+  <p id="iw50-description">Welcome to <b>3D Damage Inspection</b>. This section is still new, and our technical support team is continuing to improve the vehicle drawings and previews.</p>
+  <div class="iw50-note"><strong>🛠 Improvements in progress</strong><span>You can keep marking damaged panels and saving assessments to repair jobs while this inspection workspace is being refined.</span></div>
+  <button class="iw50-go" type="button">Continue to inspection</button>
+  <small class="iw50-foot">Thank you for using SULMOS26 Automotive.</small>
+ </section>`;
+ document.body.append(overlay);
+ const prior=document.activeElement;
+ const done=()=>{try{sessionStorage.setItem(key,'seen')}catch{};document.removeEventListener('keydown',onKey);overlay.remove();if(prior?.isConnected&&typeof prior.focus==='function')prior.focus()};
+ const onKey=e=>{if(e.key==='Escape'){e.preventDefault();done()}else if(e.key==='Tab'){
+  const buttons=[...overlay.querySelectorAll('button')],first=buttons[0],last=buttons[buttons.length-1];
+  if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus()}
+  else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus()}
+ }};
+ overlay.querySelector('.iw50-close').onclick=done;
+ overlay.querySelector('.iw50-go').onclick=done;
+ document.addEventListener('keydown',onKey);
+ overlay.querySelector('.iw50-go').focus();
+}
+
+async function start(){el('panel').innerHTML=Object.entries(panels).map(([v,n])=>`<option value="${v}">${n}</option>`).join('');try{const b=await api('bootstrap');S.userRole=b.user?.role||'';el('assetToggle').hidden=S.userRole!=='owner';if(!b.user){location.href='/';return}showInspectionWelcomeOnce(b.user);const j=await api('jobs');S.jobs=j.items||[];el('job').innerHTML='<option value="">Select repair job…</option>'+S.jobs.map(x=>`<option value="${esc(x.id)}">${esc(x.reference)} · ${esc(x.registration)} · ${esc(x.make)} ${esc(x.model)}</option>`).join('');const query=new URLSearchParams(location.search).get('job');if(query&&S.jobs.some(x=>x.id===query))el('job').value=query;await chooseJob()}catch(e){msg(e.message,true);if(e.message.includes('Sign in'))location.href='/'}
  el('job').addEventListener('change',chooseJob);el('load').onclick=showVehicle;el('bodyType').onchange=()=>{if(S.job)showDrawing()};el('outlineViews').querySelectorAll('button').forEach(b=>b.onclick=()=>{S.outlineView=b.dataset.outlineView;paintOutline()});
  el('previewMode').onchange=()=>{if(S.job){if(el('previewMode').value==='drawing')showDrawing();else msg('Mode changed. Click Show vehicle preview.')}};
  el('prevAngle').onclick=()=>activateFrame(S.activeAngle-1);el('nextAngle').onclick=()=>activateFrame(S.activeAngle+1);
